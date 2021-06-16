@@ -1,5 +1,5 @@
 import { IconButton, Checkbox } from "@material-ui/core";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "./EmailList.css";
 import Section from "./Section";
 import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
@@ -13,8 +13,23 @@ import InboxIcon from "@material-ui/icons/Inbox";
 import LocalOfferIcon from "@material-ui/icons/LocalOffer";
 import PeopleIcon from "@material-ui/icons/People";
 import EmailRow from "./EmailRow";
+import { db } from "../firebase";
 
 const EmailList = () => {
+  const [emails, setEmails] = useState([]);
+
+  useEffect(() => {
+    db.collection("emails")
+      .orderBy("timestamp", "desc")
+      .onSnapshot((snapshot) =>
+        setEmails(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        )
+      );
+  }, []);
   return (
     <div className="emailList">
       <div className="emailList_settings">
@@ -51,18 +66,16 @@ const EmailList = () => {
         <Section Icon={LocalOfferIcon} title="Promotions" color="green" />
       </div>
       <div className="emailList_List">
-        <EmailRow
-          title="Twitch"
-          subject="Hey fellow streamer"
-          description="this is a test"
-          time="10pm"
-        />
-        <EmailRow
-          title="Twitch"
-          subject="Hey fellow streamer"
-          description="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley"
-          time="10pm"
-        />
+        {emails.map(({ id, data: { to, subject, message, timestamp } }) => (
+          <EmailRow
+            id={id}
+            key={id}
+            title={to}
+            subject={subject}
+            description={message}
+            time={new Date(timestamp?.seconds * 1000).toUTCString()}
+          />
+        ))}
       </div>
     </div>
   );
